@@ -43,7 +43,7 @@ const json* FileJson::FindIdLocation(const std::string& id) const
 	std::cout << root_ << std::endl;
 
 	auto location = &(root_.at(*dir_list.begin()));
-	for (auto it = next(dir_list.begin()); it != dir_list.end(); ++it)
+	for (auto it = std::next(dir_list.begin()); it != dir_list.end(); ++it)
 	{
 		location = &(*location)["children"].at(*it);
 	}
@@ -86,7 +86,7 @@ void FileJson::Import(json info)
 				(entry["size"].is_null() ? 0 : entry["size"].get<int>());
 			root_[*dir_list.begin()]["date"] = entry["date"];
 
-			for (auto it = next(dir_list.begin()); it != dir_list.end(); ++it)
+			for (auto it = std::next(dir_list.begin()); it != dir_list.end(); ++it)
 			{
 				(*location)[*it]["size"] = (*location)[*it]["size"].get<int>() +
 					(entry["size"].is_null() ? 0 : entry["size"].get<int>());
@@ -132,7 +132,7 @@ void FileJson::UpdateSizeDate(const std::string& id, const std::string& date, in
 	root_[*dir_list.begin()]["size"] = root_[*dir_list.begin()]["size"].get<int>() + size_change;
 	root_[*dir_list.begin()]["date"] = date;
 
-	for (auto it = next(dir_list.begin()); it != dir_list.end(); ++it)
+	for (auto it = std::next(dir_list.begin()); it != dir_list.end(); ++it)
 	{
 		(*location)[*it]["size"] = (*location)[*it]["size"].get<int>() + size_change;
 		(*location)[*it]["date"] = date;

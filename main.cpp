@@ -20,14 +20,16 @@ int main()
 	FileJson current_data;
 	current_data.LoadFromFile("data.json");
 
-	const auto conn = tao::pq::connection::create("host=localhost user=postgres password=2323rm dbname=files");
-	conn->execute(R"(CREATE TABLE IF NOT EXISTS users ( 
+	const auto conn = tao::pq::connection::create("dbname=files");
+
+	conn->execute(R"(DROP TABLE IF EXISTS files)" );
+
+	conn->execute(R"(CREATE TABLE IF NOT EXISTS files ( 
 			id TEXT PRIMARY KEY,
 			info jsonb,
 			parent_path TEXT
 	))" );
-
-	conn->prepare( "import_file", "INSERT INTO files ( id, info, parent_path ) VALUES ( $1, $2, $3 )" );
+	conn->prepare( "import_file", "INSERT INTO files ( id, info, parent_path ) VALUES ( $1, to_jsonb($2::text)::jsonb, $3 )" );
 	
 
 	// $1 - string (child) $2 - string (parent)
@@ -71,7 +73,7 @@ int main()
 		});
 	CROW_ROUTE(app, "/imports").methods(crow::HTTPMethod::Post)([&](const crow::request& req)
 		{
-			try
+			//try
 			{
 				auto json = json::parse(req.body);
 				for (auto& entry : json["items"])
@@ -87,7 +89,7 @@ int main()
 				}
 				
 			}
-			catch (...)
+			//catch (...)
 			{
 				return crow::response(400, "Validation Failed");
 			}
@@ -103,7 +105,7 @@ int main()
 			}
 			catch (...)
 			{
-				return crow::response::response(404, "Item not found");
+				return crow::response(404, "Item not found");
 			}
 			//std::cout << target.dump() << std::endl << std::endl;
 			return crow::response(200, target.dump());

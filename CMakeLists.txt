@@ -15,8 +15,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include/nlohma
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq/include/pq)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libpq)
-include_directories("C:\\Program Files\\PostgreSQL\\14\\include")
-include_directories("C:\\Program Files\\PostgreSQL\\14\\include\\libpq")
+#include_directories("C:\\Program Files\\PostgreSQL\\14\\include")
+#include_directories("C:\\Program Files\\PostgreSQL\\14\\include\\libpq")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq)
 
