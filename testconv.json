@@ -1,0 +1,18 @@
+{
+	"root": {
+		"id": 123,
+		"time": 2,
+		"children": {
+			"node2": {
+				"id": 234,
+				"time": 3,
+				"children": null
+			},
+			"node3": {
+				"id": 567,
+				"time": 4,
+				"children": null
+			}
+		}
+	}
+}
