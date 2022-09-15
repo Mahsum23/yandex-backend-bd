@@ -1,128 +1,42 @@
-#include <unordered_map>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <utility>
-#include <list>
-#include <stack>
-
-#include "asio.hpp"
-#include "crow.h"
-#include "json.hpp"
-#include "file_json.h"
-#include "tao/pq.hpp"
+#include "server.hpp"
 
 using json = nlohmann::json;
 
 int main()
 {
-	crow::SimpleApp app;
-	FileJson current_data;
-	current_data.LoadFromFile("data.json");
+	FileServer fs;
+	fs.Start();
+	//dbtest();
+}
 
+void dbtest()
+{
+	using namespace std::string_literals;
 	const auto conn = tao::pq::connection::create("dbname=files");
 
-	conn->execute(R"(DROP TABLE IF EXISTS files)" );
-
+	conn->execute(R"(DROP TABLE IF EXISTS files)");
+	
 	conn->execute(R"(CREATE TABLE IF NOT EXISTS files ( 
 			id TEXT PRIMARY KEY,
 			info jsonb,
-			parent_path TEXT
-	))" );
-	conn->prepare( "import_file", "INSERT INTO files ( id, info, parent_path ) VALUES ( $1, to_jsonb($2::text)::jsonb, $3 )" );
-	
+			parent_id TEXT
+	))");
 
-	// $1 - string (child) $2 - string (parent)
-	std::string add_to_children = R"(UPDATE files SET info = jsonb_insert(info, '{children, -1}', $1, true) WHERE id = $2)"; 
+	conn->prepare("import_file", "INSERT INTO files ( id, info, parent_id ) VALUES ( $1, $2::text::jsonb, $3 )");
+	conn->prepare("update_size", update_size);
+	conn->prepare("get_info_id", get_info_by_id);
+	conn->prepare("add_to_children", add_to_children);
+	conn->prepare("update_date", update_date);
+	conn->prepare("delete_by_id", delete_by_id);
+	conn->prepare("delete_by_id_from_children", delete_by_id_from_children);
 
+	conn->execute("import_file", "1a"s, "{\"children\": [], \"type\": \"folder\", \"size\": 0, \"date\": 9}"s, "null"s);
+	conn->execute("import_file", "3b"s, "{\"children\": [], \"type\": \"file\", \"size\": 40, \"date\": 10}"s, "2c"s);
+	conn->execute("import_file", "2c"s, "{\"children\": [\"3b\"], \"type\": \"folder\", \"size\": 0, \"date\": 11}"s, "1a"s);
+	conn->execute("update_date", "3b"s, 100);
+	auto res = conn->execute("get_info_id", "3b"s);
 
-	// update date in the same query??? 
-	// $1 - string (added id), $2 - int (size of added)
-	std::string update_size = R"(WITH RECURSIVE node AS 
-	( 
-		SELECT * FROM files WHERE id = $1 
-		UNION ALL 
-		SELECT files.id, files.info, files.parent_path 
-		FROM files, node 
-		WHERE node.parent_path = files.id 
-	) 
-	UPDATE files 
-	SET info = jsonb_set(files.info, '{size}', ((files.info->>'size')::int + $2)::text::jsonb) 
-	FROM node WHERE node.parent_path = files.id )";
-
-	// $1 - string $2 - string
-	std::string update_date = R"(WITH RECURSIVE node AS 
-	( 
-		SELECT * FROM files WHERE id = $1 
-		UNION ALL 
-		SELECT files.id, files.info, files.parent_path 
-		FROM files, node 
-		WHERE node.parent_path = files.id 
-	) 
-	UPDATE files 
-	SET info = jsonb_set(files.info, '{date}', $2) 
-	FROM node WHERE node.parent_path = files.id )";
-
-	conn->prepare( "add_to_children",  add_to_children);
-	conn->prepare( "update_size",  update_size);
-	conn->prepare( "update_date",  update_date);
-
-	CROW_ROUTE(app, "/health")([]()
-		{
-			return crow::response(200, "working fine...");
-		});
-	CROW_ROUTE(app, "/imports").methods(crow::HTTPMethod::Post)([&](const crow::request& req)
-		{
-			//try
-			{
-				auto json = json::parse(req.body);
-				for (auto& entry : json["items"])
-				{
-					entry["children"] = json::array();
-					entry["date"] = json["updateDate"];
-					conn->execute("import_file",  entry["id"].dump(), entry.dump(), entry["parentId"].dump());
-					// insert id to children of node parentId
-					conn->execute("add_to_children",  entry["id"].dump(), entry["parentId"].dump());
-					// increment size and set data recursively
-					conn->execute("update_size",  entry["id"].dump(), entry["size"].dump());
-					conn->execute("update_date",  entry["id"].dump(), entry["date"].dump());
-				}
-				
-			}
-			//catch (...)
-			{
-				return crow::response(400, "Validation Failed");
-			}
-			return crow::response(200);
-		});
-
-	CROW_ROUTE(app, "/nodes/<string>").methods(crow::HTTPMethod::Get)([&](const std::string& id)
-		{
-			auto target = "{}"_json;
-			try
-			{
-				target = ConvertNestedChildrenMapToArray(current_data.FindIdLocation(id)->at(id));
-			}
-			catch (...)
-			{
-				return crow::response(404, "Item not found");
-			}
-			//std::cout << target.dump() << std::endl << std::endl;
-			return crow::response(200, target.dump());
-		});
-
-	CROW_ROUTE(app, "/delete/<string>").methods(crow::HTTPMethod::Delete)([&](const crow::request& req, const std::string& id)
-		{
-			try
-			{
-				current_data.Delete(id, req.url_params.get("date"));
-			}
-			catch (...)
-			{
-				return crow::response(404, "Item not found");
-			}
-			return crow::response(200, "Item Deleted");
-		});
-
-	app.bindaddr("127.0.0.1").port(8080).multithreaded().run();
+	conn->execute("delete_by_id", "3b");
+	conn->execute("delete_by_id_from_children", "3b");
 }
+

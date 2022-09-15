@@ -14,12 +14,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json/include/nlohma
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq/include/pq)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq/include)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/date/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/date)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libpq)
-#include_directories("C:\\Program Files\\PostgreSQL\\14\\include")
-#include_directories("C:\\Program Files\\PostgreSQL\\14\\include\\libpq")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taopq)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/date)
 
-
-add_executable(cppREST main.cpp file_json.h file_json.cpp)
+add_executable(cppREST main.cpp server.cpp server.hpp)
 target_link_libraries(cppREST taocpp::taopq)
